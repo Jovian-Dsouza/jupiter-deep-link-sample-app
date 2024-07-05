@@ -7,7 +7,7 @@ global.structuredClone = (val) => {
   return JSON.parse(JSON.stringify(val));
 };
 // if (typeof BigInt === "undefined") {
-  global.BigInt = require("big-integer");
+global.BigInt = require("big-integer");
 // }
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -22,18 +22,13 @@ import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
-import {
-  clusterApiUrl,
-  Connection,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
+import { clusterApiUrl, Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 
 import axios from "axios";
 import { Jupiter } from "./Jupiter";
 
 import { getRandomValues as expoCryptoGetRandomValues } from "expo-crypto";
+import WalletModal from "./WalletModal";
 class Crypto {
   getRandomValues = expoCryptoGetRandomValues;
 }
@@ -100,6 +95,7 @@ export default function App() {
   const [sharedSecret, setSharedSecret] = useState<Uint8Array>();
   const [session, setSession] = useState<string>();
   const [walletPublicKey, setWalletPublicKey] = useState<PublicKey>();
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -147,6 +143,7 @@ export default function App() {
       setWalletPublicKey(new PublicKey(connectData.public_key));
 
       console.log(JSON.stringify(connectData, null, 2));
+      setModalVisible(false);
     } else if (/onDisconnect/.test(url.pathname)) {
       console.log("Disconnected!");
     } else if (/onSignAndSendTransaction/.test(url.pathname)) {
@@ -189,9 +186,6 @@ export default function App() {
       console.log(JSON.stringify(signMessageData, null, 2));
     }
   }, [deepLink]);
-  
-  
-
 
   const createTransferTransaction = async () => {
     console.log("Creating transactoin");
@@ -203,7 +197,7 @@ export default function App() {
         lamports: 100,
       })
     );
-    
+
     transaction.feePayer = walletPublicKey;
     console.log("Getting recent blockhash");
     const anyTransaction: any = transaction;
@@ -348,7 +342,7 @@ export default function App() {
 
   const browseDapp = async () => {
     const params = new URLSearchParams({
-      ref: "https://solflare.com"
+      ref: "https://solflare.com",
     });
     const url = buildUrl(`v1/browse/${encodeURIComponent("https://solrise.finance")}`, params);
     Linking.openURL(url);
@@ -363,7 +357,17 @@ export default function App() {
   return (
     <View style={{ flex: 1, backgroundColor: "#282830" }}>
       <StatusBar style="light" />
-      <Jupiter session={session} connect={connect} walletPublicKey={walletPublicKey} signAndSendTransaction={signAndSendTransaction} />
+      <Jupiter
+        session={session}
+        connect={() => setModalVisible(true)}
+        walletPublicKey={walletPublicKey}
+        signAndSendTransaction={signAndSendTransaction}
+      />
+      <WalletModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        connect={(wallet: string) => connect()}
+      />
     </View>
   );
 }
@@ -372,7 +376,8 @@ const StyledButton = (props: TouchableHighlightProps & { title: string }) => {
   return (
     <TouchableHighlight
       {...props}
-      style={{ margin: 5, backgroundColor: "#FF842D", padding: 10, borderRadius: 8 }}>
+      style={{ margin: 5, backgroundColor: "#FF842D", padding: 10, borderRadius: 8 }}
+    >
       <Text style={{ color: "#000000", fontWeight: "600", textAlign: "center" }}>
         {props.title}
       </Text>
