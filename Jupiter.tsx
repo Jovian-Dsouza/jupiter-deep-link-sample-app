@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { ArrowsUpDownIcon } from "react-native-heroicons/outline";
 import { getAssetByName } from "./solanaAssests";
-import { PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction } from "@solana/web3.js";
 
 export const Jupiter = ({
   session,
@@ -38,11 +38,13 @@ export const Jupiter = ({
       return;
     }
 
-    const quote = await (
+    const quote = await(
       await fetch(
         `https://quote-api.jup.ag/v6/quote?inputMint=${fromAsset.mint}&outputMint=${
           toAsset.mint
-        }&amount=${currentAmount * Math.pow(10, fromAsset.decimals)}&slippageBps=1`
+        }&amount=${
+          currentAmount * Math.pow(10, fromAsset.decimals)
+        }&slippageBps=1&asLegacyTransaction=true`
       )
     ).json();
 
@@ -74,7 +76,7 @@ export const Jupiter = ({
     console.log("Swap called");
     if (!walletPublicKey) throw new Error("missing public key from user");
 
-    const { swapTransaction } = await (
+    const { swapTransaction } = await(
       await fetch("https://quote-api.jup.ag/v6/swap", {
         method: "POST",
         headers: {
@@ -84,6 +86,7 @@ export const Jupiter = ({
           quoteResponse,
           userPublicKey: walletPublicKey.toString(),
           wrapAndUnwrapSol: true,
+          asLegacyTransaction: true,
         }),
       })
     ).json();
@@ -100,7 +103,7 @@ export const Jupiter = ({
 
   const handlePress = () => {
     if (session) {
-      swap();
+      swap()
     } else {
       connect();
     }

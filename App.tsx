@@ -94,7 +94,6 @@ export default function App() {
   const [deepLink, setDeepLink] = useState<string>("");
   const [logs, setLogs] = useState<string[]>([]);
   const connection = new Connection(NETWORK);
-  const addLog = useCallback((log: string) => setLogs((logs) => [...logs, "> " + log]), []);
   const scrollViewRef = useRef<any>(null);
 
   const [dappKeyPair] = useState(() => nacl.box.keyPair());
@@ -127,7 +126,7 @@ export default function App() {
     const params = url.searchParams;
 
     if (params.get("errorCode")) {
-      addLog(JSON.stringify(Object.fromEntries([...params]), null, 2));
+      console.log(JSON.stringify(Object.fromEntries([...params]), null, 2));
       return;
     }
 
@@ -147,9 +146,9 @@ export default function App() {
       setSession(connectData.session);
       setWalletPublicKey(new PublicKey(connectData.public_key));
 
-      addLog(JSON.stringify(connectData, null, 2));
+      console.log(JSON.stringify(connectData, null, 2));
     } else if (/onDisconnect/.test(url.pathname)) {
-      addLog("Disconnected!");
+      console.log("Disconnected!");
     } else if (/onSignAndSendTransaction/.test(url.pathname)) {
       const signAndSendTransactionData = decryptPayload(
         params.get("data")!,
@@ -157,7 +156,7 @@ export default function App() {
         sharedSecret
       );
 
-      addLog(JSON.stringify(signAndSendTransactionData, null, 2));
+      console.log(JSON.stringify(signAndSendTransactionData, null, 2));
     } else if (/onSignAllTransactions/.test(url.pathname)) {
       const signAllTransactionsData = decryptPayload(
         params.get("data")!,
@@ -169,7 +168,7 @@ export default function App() {
         Transaction.from(bs58.decode(t))
       );
 
-      addLog(JSON.stringify(decodedTransactions, null, 2));
+      console.log(JSON.stringify(decodedTransactions, null, 2));
     } else if (/onSignTransaction/.test(url.pathname)) {
       const signTransactionData = decryptPayload(
         params.get("data")!,
@@ -179,7 +178,7 @@ export default function App() {
 
       const decodedTransaction = Transaction.from(bs58.decode(signTransactionData.transaction));
 
-      addLog(JSON.stringify(decodedTransaction, null, 2));
+      console.log(JSON.stringify(decodedTransaction, null, 2));
     } else if (/onSignMessage/.test(url.pathname)) {
       const signMessageData = decryptPayload(
         params.get("data")!,
@@ -187,7 +186,7 @@ export default function App() {
         sharedSecret
       );
 
-      addLog(JSON.stringify(signMessageData, null, 2));
+      console.log(JSON.stringify(signMessageData, null, 2));
     }
   }, [deepLink]);
   
@@ -241,13 +240,8 @@ export default function App() {
     Linking.openURL(url);
   };
 
-  const signAndSendTransaction = async (transaction: Transaction) => {
-    // const transaction = await createTransferTransaction();
-    transaction.feePayer = walletPublicKey;
-    // console.log("Getting recent blockhash");
-    const anyTransaction: any = transaction;
-    anyTransaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-    console.log(transaction)
+  const signAndSendTransaction = async (transaction: any) => {
+    transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
     const serializedTransaction = transaction.serialize({
       requireAllSignatures: false,
     });
@@ -265,7 +259,6 @@ export default function App() {
       payload: bs58.encode(encryptedPayload),
     });
 
-    addLog("Sending transaction...");
     const url = buildUrl("v1/signAndSendTransaction", params);
     Linking.openURL(url);
   };
@@ -298,7 +291,7 @@ export default function App() {
       payload: bs58.encode(encryptedPayload),
     });
 
-    addLog("Signing transactions...");
+    console.log("Signing transactions...");
     const url = buildUrl("v1/signAllTransactions", params);
     Linking.openURL(url);
   };
@@ -326,7 +319,7 @@ export default function App() {
       payload: bs58.encode(encryptedPayload),
     });
 
-    addLog("Signing transaction...");
+    console.log("Signing transaction...");
     const url = buildUrl("v1/signTransaction", params);
     Linking.openURL(url);
   };
@@ -348,7 +341,7 @@ export default function App() {
       payload: bs58.encode(encryptedPayload),
     });
 
-    addLog("Signing message...");
+    console.log("Signing message...");
     const url = buildUrl("v1/signMessage", params);
     Linking.openURL(url);
   };
@@ -361,11 +354,11 @@ export default function App() {
     Linking.openURL(url);
   };
 
-  useEffect(()=>{
-    if(walletPublicKey){
-      console.log(walletPublicKey.toString())
+  useEffect(() => {
+    if (walletPublicKey) {
+      console.log(walletPublicKey.toString());
     }
-  }, [walletPublicKey])
+  }, [walletPublicKey]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#282830" }}>
