@@ -2,6 +2,13 @@ import "react-native-get-random-values";
 import "react-native-url-polyfill/auto";
 import { Buffer } from "buffer";
 global.Buffer = global.Buffer || Buffer;
+global.TextEncoder = require("text-encoding").TextEncoder;
+global.structuredClone = (val) => {
+  return JSON.parse(JSON.stringify(val));
+};
+// if (typeof BigInt === "undefined") {
+  global.BigInt = require("big-integer");
+// }
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Platform,
@@ -22,11 +29,28 @@ import {
   SystemProgram,
   Transaction,
 } from "@solana/web3.js";
-import { getAssetByName } from "./solanaAssests";
+
 import axios from "axios";
 import { Jupiter } from "./Jupiter";
 
-const NETWORK = clusterApiUrl("mainnet-beta");
+import { getRandomValues as expoCryptoGetRandomValues } from "expo-crypto";
+class Crypto {
+  getRandomValues = expoCryptoGetRandomValues;
+}
+const webCrypto = typeof crypto !== "undefined" ? crypto : new Crypto();
+(() => {
+  if (typeof crypto === "undefined") {
+    Object.defineProperty(window, "crypto", {
+      configurable: true,
+      enumerable: true,
+      get: () => webCrypto,
+    });
+  }
+})();
+
+const cluster = "mainnet-beta";
+// const cluster = "devnet"
+const NETWORK = clusterApiUrl(cluster);
 // const NETWORK = clusterApiUrl("devnet");
 
 const onConnectRedirectLink = Linking.createURL("onConnect");
@@ -167,47 +191,11 @@ export default function App() {
     }
   }, [deepLink]);
   
-  const fromAsset = getAssetByName("USDC")
-  const toAsset = getAssetByName("BONK")
-  const [toAmount, setToAmount] = useState(0);
-  const [quoteResponse, setQuoteResponse] = useState(null);
-
-  async function getQuote(currentAmount: number) {
-    console.log("Get quote called")
-    if (isNaN(currentAmount) || currentAmount <= 0) {
-      console.error("Invalid fromAmount value:", currentAmount);
-      return;
-    }
-
-    const quote = await (await fetch(
-      `https://quote-api.jup.ag/v6/quote?inputMint=${fromAsset.mint}&outputMint=${
-        toAsset.mint
-      }&amount=${currentAmount * Math.pow(10, fromAsset.decimals)}&slippageBps=10`
-    )).json()
-
-    // await (
-    // const quote =  await axios.get(
-    //     "https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&amount=1000000&slippageBps=1"
-    //   )
-    //   console.log(quote)
-    // ).json();
-    console.log(quote)
-
-    if (quote && quote.outAmount) {
-      const outAmountNumber = Number(quote.outAmount) / Math.pow(10, toAsset.decimals);
-      setToAmount(outAmountNumber);
-      console.log(`Got quote for swap ${fromAsset.name} -> ${toAsset.name}: ${outAmountNumber}`);
-    }
-
-    setQuoteResponse(quote);
-  }
-
-  // useEffect(() => {
-  //   getQuote(10);
-  // }, []);
+  
 
 
   const createTransferTransaction = async () => {
+    console.log("Creating transactoin");
     if (!walletPublicKey) throw new Error("missing public key from user");
     let transaction = new Transaction().add(
       SystemProgram.transfer({
@@ -216,8 +204,9 @@ export default function App() {
         lamports: 100,
       })
     );
+    
     transaction.feePayer = walletPublicKey;
-    addLog("Getting recent blockhash");
+    console.log("Getting recent blockhash");
     const anyTransaction: any = transaction;
     anyTransaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
     return transaction;
@@ -226,8 +215,7 @@ export default function App() {
   const connect = async () => {
     const params = new URLSearchParams({
       dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
-      //cluster: "mainnet-beta",
-      cluster: "devnet",
+      cluster: cluster,
       app_url: "https://solflare.com",
       redirect_link: onConnectRedirectLink,
     });
@@ -253,9 +241,13 @@ export default function App() {
     Linking.openURL(url);
   };
 
-  const signAndSendTransaction = async () => {
-    const transaction = await createTransferTransaction();
-
+  const signAndSendTransaction = async (transaction: Transaction) => {
+    // const transaction = await createTransferTransaction();
+    transaction.feePayer = walletPublicKey;
+    // console.log("Getting recent blockhash");
+    const anyTransaction: any = transaction;
+    anyTransaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    console.log(transaction)
     const serializedTransaction = transaction.serialize({
       requireAllSignatures: false,
     });
@@ -369,10 +361,16 @@ export default function App() {
     Linking.openURL(url);
   };
 
+  useEffect(()=>{
+    if(walletPublicKey){
+      console.log(walletPublicKey.toString())
+    }
+  }, [walletPublicKey])
+
   return (
     <View style={{ flex: 1, backgroundColor: "#282830" }}>
       <StatusBar style="light" />
-      <Jupiter />
+      <Jupiter session={session} connect={connect} walletPublicKey={walletPublicKey} signAndSendTransaction={signAndSendTransaction} />
     </View>
   );
 }
