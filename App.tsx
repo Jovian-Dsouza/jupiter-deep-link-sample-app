@@ -22,9 +22,12 @@ import {
   SystemProgram,
   Transaction,
 } from "@solana/web3.js";
+import { getAssetByName } from "./solanaAssests";
+import axios from "axios";
+import { Jupiter } from "./Jupiter";
 
-//const NETWORK = clusterApiUrl("mainnet-beta");
-const NETWORK = clusterApiUrl("devnet");
+const NETWORK = clusterApiUrl("mainnet-beta");
+// const NETWORK = clusterApiUrl("devnet");
 
 const onConnectRedirectLink = Linking.createURL("onConnect");
 const onDisconnectRedirectLink = Linking.createURL("onDisconnect");
@@ -163,6 +166,46 @@ export default function App() {
       addLog(JSON.stringify(signMessageData, null, 2));
     }
   }, [deepLink]);
+  
+  const fromAsset = getAssetByName("USDC")
+  const toAsset = getAssetByName("BONK")
+  const [toAmount, setToAmount] = useState(0);
+  const [quoteResponse, setQuoteResponse] = useState(null);
+
+  async function getQuote(currentAmount: number) {
+    console.log("Get quote called")
+    if (isNaN(currentAmount) || currentAmount <= 0) {
+      console.error("Invalid fromAmount value:", currentAmount);
+      return;
+    }
+
+    const quote = await (await fetch(
+      `https://quote-api.jup.ag/v6/quote?inputMint=${fromAsset.mint}&outputMint=${
+        toAsset.mint
+      }&amount=${currentAmount * Math.pow(10, fromAsset.decimals)}&slippageBps=10`
+    )).json()
+
+    // await (
+    // const quote =  await axios.get(
+    //     "https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&amount=1000000&slippageBps=1"
+    //   )
+    //   console.log(quote)
+    // ).json();
+    console.log(quote)
+
+    if (quote && quote.outAmount) {
+      const outAmountNumber = Number(quote.outAmount) / Math.pow(10, toAsset.decimals);
+      setToAmount(outAmountNumber);
+      console.log(`Got quote for swap ${fromAsset.name} -> ${toAsset.name}: ${outAmountNumber}`);
+    }
+
+    setQuoteResponse(quote);
+  }
+
+  // useEffect(() => {
+  //   getQuote(10);
+  // }, []);
+
 
   const createTransferTransaction = async () => {
     if (!walletPublicKey) throw new Error("missing public key from user");
@@ -327,58 +370,9 @@ export default function App() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#17171D" }}>
+    <View style={{ flex: 1, backgroundColor: "#282830" }}>
       <StatusBar style="light" />
-      <View style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={{
-            backgroundColor: "#111",
-            padding: 20,
-            paddingTop: 100,
-            flexGrow: 1,
-          }}
-          ref={scrollViewRef}
-          onContentSizeChange={() => {
-            scrollViewRef.current.scrollToEnd({ animated: true });
-          }}
-          style={{ flex: 1 }}
-        >
-          {logs.map((log, i) => (
-            <Text
-              key={`t-${i}`}
-              style={{
-                fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
-                color: "#fff",
-                fontSize: 14,
-              }}
-            >
-              {log}
-            </Text>
-          ))}
-        </ScrollView>
-      </View>
-      <View
-        style={{
-          flex: 0,
-          paddingTop: 10,
-          paddingBottom: 40,
-          paddingHorizontal: 5,
-          backgroundColor: "#29292B"
-      }}>
-        <View style={{ flexDirection: "row" }}>
-          <View style={{ flexGrow: 1 }}>
-            <StyledButton title="Connect" onPress={connect} />
-          </View>
-          <View style={{ flexGrow: 1 }}>
-            <StyledButton title="Disconnect" onPress={disconnect} />
-          </View>
-        </View>
-        <StyledButton title="Sign And Send Transaction" onPress={signAndSendTransaction} />
-        <StyledButton title="Sign All Transactions" onPress={signAllTransactions} />
-        <StyledButton title="Sign Transaction" onPress={signTransaction} />
-        <StyledButton title="Sign Message" onPress={signMessage} />
-        <StyledButton title="Browse dApp - Solrise Finance" onPress={browseDapp} />
-      </View>
+      <Jupiter />
     </View>
   );
 }
