@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Image } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+} from "react-native";
 import { ArrowsUpDownIcon } from "react-native-heroicons/outline";
 import { getAssetByName } from "./solanaAssests";
 import { PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
@@ -57,7 +67,6 @@ export const Jupiter = ({
       }
     }, 5000);
 
-    // Cleanup interval on component unmount
     return () => clearInterval(interval);
   }, [fromAmount, fromAsset, toAsset]);
 
@@ -65,7 +74,6 @@ export const Jupiter = ({
     console.log("Swap called");
     if (!walletPublicKey) throw new Error("missing public key from user");
 
-    // get serialized transactions for the swap
     const { swapTransaction } = await (
       await fetch("https://quote-api.jup.ag/v6/swap", {
         method: "POST",
@@ -98,48 +106,49 @@ export const Jupiter = ({
     }
   };
 
-  // useEffect(()=>{
-  //   console.log(session)
-  // }, [session])
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Jupiter</Text>
-      <View style={styles.currencyContainer}>
-        <View style={styles.tokenContainer}>
-          <Image source={fromAsset.img} style={styles.tokenIcon} />
-          <Text style={styles.label}>{fromAsset.name}</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <Text style={styles.title}>Jupiter</Text>
+        <View style={styles.currencyContainer}>
+          <View style={styles.tokenContainer}>
+            <Image source={fromAsset.img} style={styles.tokenIcon} />
+            <Text style={styles.label}>{fromAsset.name}</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="0.00"
+            placeholderTextColor="#666"
+            keyboardType="numeric"
+            value={fromAmount}
+            onChangeText={(text) => setFromAmount(text)}
+          />
         </View>
-        <TextInput
-          style={styles.input}
-          placeholder="0.00"
-          placeholderTextColor="#666"
-          keyboardType="numeric"
-          value={fromAmount}
-          onChangeText={(text) => setFromAmount(text)}
-        />
-      </View>
-      <TouchableOpacity style={styles.switchButton}>
-        <ArrowsUpDownIcon color="white" fill="white" />
-      </TouchableOpacity>
-      <View style={styles.currencyContainer}>
-        <View style={styles.tokenContainer}>
-          <Image source={toAsset.img} style={styles.tokenIcon} />
-          <Text style={styles.label}>{toAsset.name}</Text>
+        <TouchableOpacity style={styles.switchButton}>
+          <ArrowsUpDownIcon color="white" fill="white" />
+        </TouchableOpacity>
+        <View style={styles.currencyContainer}>
+          <View style={styles.tokenContainer}>
+            <Image source={toAsset.img} style={styles.tokenIcon} />
+            <Text style={styles.label}>{toAsset.name}</Text>
+          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter desired amount"
+            placeholderTextColor="#666"
+            keyboardType="numeric"
+            value={toAmount}
+            editable={false}
+          />
         </View>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter desired amount"
-          placeholderTextColor="#666"
-          keyboardType="numeric"
-          value={toAmount}
-          editable={false}
-        />
-      </View>
-      <TouchableOpacity style={styles.connectButton} onPress={handlePress}>
-        <Text style={styles.connectText}>{session ? "Swap" : "Connect Wallet"}</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity style={styles.connectButton} onPress={handlePress}>
+          <Text style={styles.connectText}>{session ? "Swap" : "Connect Wallet"}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -147,6 +156,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#282830",
+  },
+  scrollViewContent: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
