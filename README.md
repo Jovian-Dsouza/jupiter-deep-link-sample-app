@@ -1,12 +1,22 @@
-# Deep linking API sample application
-This repo contains a sample application written with React Native that showcases Solflare's deep linking API.
+# Jupiter Deep linking sample application
 
-[API Documentation](https://docs.solflare.com/solflare/technical/deeplinks)
+This repo contains a sample application written with React Native that showcases Jupiter SDK with solfare deep linking API.
+
+## Prerequistes
+
+- requires node 18
+
+```sh
+node -v
+nvm install 18
+nvm use 18
+```
 
 ## Getting started
+
 ```sh
 # install dependencies
-$ yarn 
+$ yarn
 # start metro bundler
 $ yarn start
 ```
