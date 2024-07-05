@@ -12,33 +12,42 @@ import {
 } from "react-native";
 import { ArrowsUpDownIcon } from "react-native-heroicons/outline";
 import { getAssetByName } from "./solanaAssests";
-import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, VersionedTransaction } from "@solana/web3.js";
+import {
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  VersionedTransaction,
+} from "@solana/web3.js";
 
 export const Jupiter = ({
   session,
   walletPublicKey,
   connect,
   signAndSendTransaction,
+  fromAmount,
+  setFromAmount,
 }: {
   session: string | undefined;
   walletPublicKey: PublicKey | undefined;
   connect: any;
   signAndSendTransaction: any;
+  fromAmount: string;
+  setFromAmount: any;
 }) => {
   const fromAsset = getAssetByName("USDC");
   const toAsset = getAssetByName("BONK");
-  const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
   const [quoteResponse, setQuoteResponse] = useState(null);
 
   async function getQuote(currentAmount: number) {
     console.log("Get quote called");
     if (isNaN(currentAmount) || currentAmount <= 0) {
-      console.error("Invalid fromAmount value:", currentAmount);
+      console.log("Invalid fromAmount value:", currentAmount);
       return;
     }
 
-    const quote = await(
+    const quote = await (
       await fetch(
         `https://quote-api.jup.ag/v6/quote?inputMint=${fromAsset.mint}&outputMint=${
           toAsset.mint
@@ -59,16 +68,19 @@ export const Jupiter = ({
     setQuoteResponse(quote);
   }
 
-  useEffect(() => {
+  function updateQuote() {
     if (fromAmount !== "") {
-      getQuote(parseFloat(fromAmount));
-    }
-    const interval = setInterval(() => {
-      if (fromAmount !== "") {
+      try {
         getQuote(parseFloat(fromAmount));
+      } catch (error) {
+        console.log(error);
       }
-    }, 5000);
+    }
+  }
 
+  useEffect(() => {
+    updateQuote()
+    const interval = setInterval(updateQuote, 5000);
     return () => clearInterval(interval);
   }, [fromAmount, fromAsset, toAsset]);
 
@@ -76,7 +88,7 @@ export const Jupiter = ({
     console.log("Swap called");
     if (!walletPublicKey) throw new Error("missing public key from user");
 
-    const { swapTransaction } = await(
+    const { swapTransaction } = await (
       await fetch("https://quote-api.jup.ag/v6/swap", {
         method: "POST",
         headers: {
@@ -103,7 +115,7 @@ export const Jupiter = ({
 
   const handlePress = () => {
     if (session) {
-      swap()
+      swap();
     } else {
       connect();
     }

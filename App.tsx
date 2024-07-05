@@ -96,6 +96,7 @@ export default function App() {
   const [session, setSession] = useState<string>();
   const [walletPublicKey, setWalletPublicKey] = useState<PublicKey>();
   const [modalVisible, setModalVisible] = useState(false);
+  const [fromAmount, setFromAmount] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -154,6 +155,9 @@ export default function App() {
       );
 
       console.log(JSON.stringify(signAndSendTransactionData, null, 2));
+      setFromAmount("");
+      //TODO show transaction success modal
+      
     } else if (/onSignAllTransactions/.test(url.pathname)) {
       const signAllTransactionsData = decryptPayload(
         params.get("data")!,
@@ -362,6 +366,8 @@ export default function App() {
         connect={() => setModalVisible(true)}
         walletPublicKey={walletPublicKey}
         signAndSendTransaction={signAndSendTransaction}
+        fromAmount={fromAmount}
+        setFromAmount={setFromAmount}
       />
       <WalletModal
         modalVisible={modalVisible}
