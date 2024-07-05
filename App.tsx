@@ -29,6 +29,7 @@ import { Jupiter } from "./Jupiter";
 
 import { getRandomValues as expoCryptoGetRandomValues } from "expo-crypto";
 import WalletModal from "./WalletModal";
+import SuccessModal from "./SuccessModal";
 class Crypto {
   getRandomValues = expoCryptoGetRandomValues;
 }
@@ -96,6 +97,7 @@ export default function App() {
   const [session, setSession] = useState<string>();
   const [walletPublicKey, setWalletPublicKey] = useState<PublicKey>();
   const [modalVisible, setModalVisible] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [fromAmount, setFromAmount] = useState("");
 
   useEffect(() => {
@@ -155,9 +157,9 @@ export default function App() {
       );
 
       console.log(JSON.stringify(signAndSendTransactionData, null, 2));
+      setSuccessModalVisible(true);
       setFromAmount("");
       //TODO show transaction success modal
-      
     } else if (/onSignAllTransactions/.test(url.pathname)) {
       const signAllTransactionsData = decryptPayload(
         params.get("data")!,
@@ -374,6 +376,7 @@ export default function App() {
         setModalVisible={setModalVisible}
         connect={(wallet: string) => connect()}
       />
+      <SuccessModal modalVisible={successModalVisible} setModalVisible={setSuccessModalVisible} />
     </View>
   );
 }
